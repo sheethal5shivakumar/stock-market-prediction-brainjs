@@ -69,28 +69,30 @@ function scaleUp(step) {
   };
 }
 
-// --- Fetch Historical OHLC Data from Alpha Vantage ---
+// --- Fetch Historical OHLC Data from Twelve Data (DAILY) ---
 async function fetchStockData(symbol) {
-  const apiKey = 'demo'; // Replace with your own API key for production
-  const url = `https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${apiKey}`;
+  const apiKey = '47d6ae14f24140819ca0084cd038f199'; // <-- User's real Twelve Data API key
+  const url = `https://api.twelvedata.com/time_series?symbol=${symbol}&interval=1day&outputsize=60&apikey=${apiKey}`;
   try {
     const response = await fetch(url);
     const data = await response.json();
-    if (data['Time Series (Daily)']) {
-      const allDates = Object.keys(data['Time Series (Daily)']).slice(0, 60).reverse();
-      const ohlc = allDates.map(date => {
-        const d = data['Time Series (Daily)'][date];
-        return {
-          open: parseFloat(d['1. open']),
-          high: parseFloat(d['2. high']),
-          low: parseFloat(d['3. low']),
-          close: parseFloat(d['4. close'])
-        };
-      });
-      return { dates: allDates, ohlc };
-    } else {
-      throw new Error('API returned no data');
+    console.log('Twelve Data API response:', data); // Debug log
+    if (data.status === 'error') {
+      showError('Twelve Data API Error: ' + data.message);
+      throw new Error('API Error: ' + data.message);
     }
+    if (!data.values || !Array.isArray(data.values) || data.values.length === 0) {
+      throw new Error('API returned no data. Possible reasons: invalid symbol, rate limit exceeded, or unsupported market.');
+    }
+    // Parse and reverse to chronological order
+    const allDates = data.values.map(v => v.datetime).reverse();
+    const ohlc = data.values.map(v => ({
+      open: parseFloat(v.open),
+      high: parseFloat(v.high),
+      low: parseFloat(v.low),
+      close: parseFloat(v.close)
+    })).reverse();
+    return { dates: allDates, ohlc };
   } catch (err) {
     showError('API failed, using mock data. (' + err.message + ')');
     return mockData;
@@ -238,7 +240,6 @@ form.addEventListener('submit', async (e) => {
     net.train(train, {
       learningRate: 0.005,
       errorThresh: 0.02,
-      // log: (stats) => console.log(stats)
     });
   } catch (err) {
     setLoading(false);
@@ -248,27 +249,36 @@ form.addEventListener('submit', async (e) => {
 
   // 6. Test prediction (on test set)
   const testPreds = test.map(seq => net.run(seq.slice(0, windowSize - 1).concat([seq[windowSize - 2]])));
-  // Denormalize for accuracy calculation
-  const testTrue = test.map(seq => scaleUp(seq[windowSize - 1]));
-  const testPred = testPreds.map(scaleUp);
-  const rmse = calcOHLC_RMSE(testTrue, testPred);
+  const testTrue = test.map(seq => seq[windowSize - 1]);
+  const rmse = calcOHLC_RMSE(testTrue, testPreds);
 
-  // 7. Predict next 5 days
-  let lastSeq = scaledOhlc.slice(-windowSize);
-  const futurePreds = [];
-  const predDates = [];
-  let lastDate = new Date(dates[dates.length - 1]);
-  for (let i = 0; i < 5; i++) {
-    const pred = net.run(lastSeq);
-    futurePreds.push(scaleUp(pred));
-    lastSeq = lastSeq.slice(1).concat([pred]);
-    lastDate.setDate(lastDate.getDate() + 1);
-    predDates.push(lastDate.toISOString().slice(0, 10));
+  // 7. Predict next period (using last window)
+  const lastWindow = scaledOhlc.slice(-windowSize);
+  const nextScaled = net.run(lastWindow);
+  const next = scaleUp(nextScaled);
+  const nextDate = 'Next';
+
+  // 8. Render chart (historical + prediction)
+  renderChart(
+    dates,
+    ohlc,
+    [next],
+    [nextDate]
+  );
+
+  // 9. Show prediction and accuracy
+  predictionOutput.textContent = `Predicted next close: $${next.close.toFixed(2)}`;
+  if (rmse !== null) {
+    accuracyOutput.textContent = `Test RMSE (lower is better): ${rmse.toFixed(4)}`;
   }
 
-  // 8. Render chart and output
-  renderChart(dates, ohlc, futurePreds, predDates);
-  predictionOutput.textContent = `Predicted closing prices for next 5 days: ${futurePreds.map(p => p.close.toFixed(2)).join(', ')}`;
-  accuracyOutput.textContent = `Test RMSE (OHLC): ${rmse !== null ? rmse.toFixed(4) : 'N/A'}`;
   setLoading(false);
+});
+
+// Force uppercase in the stock symbol input as the user types
+symbolInput.addEventListener('input', function(e) {
+  const start = this.selectionStart;
+  const end = this.selectionEnd;
+  this.value = this.value.toUpperCase();
+  this.setSelectionRange(start, end);
 }); 
