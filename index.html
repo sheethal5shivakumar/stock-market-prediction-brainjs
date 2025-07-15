@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Market Prediction (Brain.js)</title>
+  <!-- TailwindCSS CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Brain.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/brain.js@2.0.0-beta.2/dist/brain-browser.min.js"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-100 to-blue-300 min-h-screen flex items-center justify-center">
+  <div class="w-full max-w-xl bg-white/80 rounded-2xl shadow-xl p-8 flex flex-col gap-6">
+    <h1 class="text-3xl font-bold text-center mb-2">Stock Market Prediction</h1>
+    <!-- Input form -->
+    <form id="stock-form" class="flex flex-col sm:flex-row gap-4 items-center justify-center">
+      <input id="stock-symbol" type="text" placeholder="Enter Stock Symbol (e.g. AAPL)" class="flex-1 border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" required />
+      <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">Predict</button>
+    </form>
+    <!-- Loader -->
+    <div id="loader" class="hidden flex justify-center"><div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-8 w-8"></div></div>
+    <!-- Chart area -->
+    <canvas id="stock-chart" class="w-full h-64"></canvas>
+    <!-- Prediction output -->
+    <div id="prediction-output" class="text-center text-lg font-semibold"></div>
+    <!-- Accuracy/Error display -->
+    <div id="accuracy-output" class="text-center text-sm text-gray-600"></div>
+    <div id="error-message" class="hidden text-center text-red-600"></div>
+  </div>
+  <style>
+    .loader {
+      border-top-color: #3498db;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+  <!-- Main app logic -->
+  <script src="app.js"></script>
+</body>
+</html> 
