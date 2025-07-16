@@ -65,7 +65,7 @@
     body.dark .loader { border-top-color: #FFD700; }
   </style>
 </head>
-<body class="bg-white min-h-screen">
+<body class="min-h-screen relative overflow-x-hidden">
   <!-- Navbar/Header -->
   <header class="w-full bg-white border-b border-gold shadow-gold">
     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between py-4 px-6 gap-2">
@@ -74,7 +74,7 @@
         <div class="w-12 h-12 rounded-full flex items-center justify-center bg-gold text-black font-extrabold text-2xl shadow-gold select-none">TA</div>
         <div class="flex flex-col">
           <span class="text-3xl font-extrabold tracking-tight text-black leading-none">TwinAlpha</span>
-          <span class="text-xs font-semibold gold tracking-wide mt-1">Powered by Nidhi & Sheethal — Predicting the Pulse of the Market</span>
+          <span class="text-xs font-semibold gold tracking-wide mt-1">Powered by Sheethal & Nidhi — Predicting the Pulse of the Market</span>
         </div>
       </div>
       <nav class="flex-1 flex items-center justify-end gap-8 text-lg font-semibold">
@@ -99,8 +99,8 @@
   </div>
 
   <!-- Main Content -->
-  <main class="flex flex-col items-center justify-center py-10 px-2">
-    <div class="w-full max-w-2xl bg-white/95 rounded-2xl shadow-2xl p-8 flex flex-col gap-8 border-2 border-gold">
+  <main class="flex flex-col items-center justify-center py-10 px-2 relative" style="z-index:1;">
+    <div class="w-full max-w-4xl bg-white/95 rounded-2xl shadow-2xl p-12 flex flex-col gap-10 border-2 border-gold">
       <!-- Stock Input and Actions -->
       <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
         <form id="stock-form" class="flex flex-1 gap-3 items-center">
