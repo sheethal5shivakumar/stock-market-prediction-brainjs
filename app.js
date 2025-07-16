@@ -16,7 +16,6 @@ const lowValue = document.getElementById('low-value');
 const closeValue = document.getElementById('close-value');
 const predictBtn = document.getElementById('predict-btn');
 const historicalBtn = document.getElementById('historical-btn');
-const popularStocksBar = document.getElementById('popular-stocks-bar');
 // Remove percent elements
 // const openPct = document.getElementById('open-pct');
 // const highPct = document.getElementById('high-pct');
@@ -167,6 +166,11 @@ function renderChart(dates, ohlc, predicted = [], predDates = []) {
   const closePrices = ohlc.map(x => x.close);
   const predCloses = predicted.map(x => x.close);
   const allDates = [...dates, ...predDates];
+  const allY = [...closePrices, ...predCloses];
+  const minY = Math.min(...allY);
+  const maxY = Math.max(...allY);
+  console.log('closePrices:', closePrices);
+  console.log('predCloses:', predCloses);
   chart = new Chart(chartCanvas, {
     type: 'line',
     data: {
@@ -185,11 +189,12 @@ function renderChart(dates, ohlc, predicted = [], predDates = []) {
           label: 'Predicted Close',
           data: Array(dates.length).fill(null).concat(predCloses),
           borderColor: '#f59e42',
-          backgroundColor: 'rgba(245,158,66,0.1)',
+          backgroundColor: '#f59e42',
           borderDash: [5,5],
           fill: false,
           tension: 0.4,
-          pointRadius: 0,
+          pointRadius: Array(dates.length).fill(0).concat(predCloses.map(() => 8)),
+          showLine: false,
         }
       ]
     },
@@ -201,7 +206,11 @@ function renderChart(dates, ohlc, predicted = [], predDates = []) {
       },
       scales: {
         x: { display: true },
-        y: { display: true }
+        y: {
+          display: true,
+          min: minY - 2,
+          max: maxY + 2
+        }
       }
     }
   });
@@ -209,15 +218,19 @@ function renderChart(dates, ohlc, predicted = [], predDates = []) {
 
 // --- UI Helpers ---
 function setLoading(isLoading) {
-  loader.classList.toggle('hidden', !isLoading);
+  if (loader) loader.classList.toggle('hidden', !isLoading);
 }
 function showError(msg) {
-  errorMessage.textContent = msg;
-  errorMessage.classList.remove('hidden');
+  if (errorMessage) {
+    errorMessage.textContent = msg;
+    errorMessage.classList.remove('hidden');
+  }
 }
 function clearError() {
-  errorMessage.textContent = '';
-  errorMessage.classList.add('hidden');
+  if (errorMessage) {
+    errorMessage.textContent = '';
+    errorMessage.classList.add('hidden');
+  }
 }
 
 function setPctChange(el, pct) {
@@ -238,6 +251,7 @@ function setPctChange(el, pct) {
 }
 
 function setOhlcColor(el, diff) {
+  if (!el) return;
   if (diff > 0) {
     el.className = 'text-lg font-bold text-green-600';
   } else if (diff < 0) {
@@ -248,6 +262,7 @@ function setOhlcColor(el, diff) {
 }
 
 function updateOhlcUI(ohlc) {
+  if (!openValue || !highValue || !lowValue || !closeValue) return;
   const last = ohlc[ohlc.length - 1];
   const prev = ohlc.length > 1 ? ohlc[ohlc.length - 2] : null;
   openValue.textContent = last.open !== undefined ? last.open : '--';
@@ -285,69 +300,81 @@ function formatNumber(n) {
 
 // --- Helper: Show and fill stock info card ---
 function showStockInfoCard(symbol, ohlc, meta = {}) {
+  if (!stockInfoCard) return;
   // Show card
   stockInfoCard.classList.remove('hidden');
   // Logo
-  stockLogo.src = getLogoUrl(symbol);
+  if (stockLogo) stockLogo.src = getLogoUrl(symbol);
   // Company name (fallback to symbol)
-  stockCompany.textContent = meta.name || symbol;
+  if (stockCompany) stockCompany.textContent = meta.name || symbol;
   // Symbol
-  stockSymbolCard.textContent = symbol;
+  if (stockSymbolCard) stockSymbolCard.textContent = symbol;
   // Price, change, open, prev close, etc.
   const last = ohlc[ohlc.length - 1];
   const prev = ohlc.length > 1 ? ohlc[ohlc.length - 2] : null;
-  stockPrice.textContent = last.close !== undefined ? last.close : '--';
-  stockCurrency.textContent = meta.currency || 'USD';
+  if (stockPrice) stockPrice.textContent = last.close !== undefined ? last.close : '--';
+  if (stockCurrency) stockCurrency.textContent = meta.currency || 'USD';
   // Change and percent
   if (prev) {
-    const change = last.close - prev.close;
-    const pct = (change / prev.close) * 100;
-    stockChange.textContent = (change > 0 ? '+' : '') + change.toFixed(2);
-    stockChange.className = 'text-lg font-semibold ' + (change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-gray-500');
-    stockChangePct.textContent = (pct > 0 ? '+' : '') + pct.toFixed(2) + '%';
-    stockChangePct.className = 'text-sm ' + (pct > 0 ? 'text-green-600' : pct < 0 ? 'text-red-600' : 'text-gray-500');
+    if (stockChange) {
+      const change = last.close - prev.close;
+      stockChange.textContent = (change > 0 ? '+' : '') + change.toFixed(2);
+      stockChange.className = 'text-lg font-semibold ' + (change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-gray-500');
+    }
+    if (stockChangePct) {
+      const pct = ((last.close - prev.close) / prev.close) * 100;
+      stockChangePct.textContent = (pct > 0 ? '+' : '') + pct.toFixed(2) + '%';
+      stockChangePct.className = 'text-sm ' + (pct > 0 ? 'text-green-600' : pct < 0 ? 'text-red-600' : 'text-gray-500');
+    }
   } else {
-    stockChange.textContent = '--';
-    stockChangePct.textContent = '--';
-    stockChange.className = 'text-lg font-semibold text-gray-500';
-    stockChangePct.className = 'text-sm text-gray-500';
+    if (stockChange) {
+      stockChange.textContent = '--';
+      stockChange.className = 'text-lg font-semibold text-gray-500';
+    }
+    if (stockChangePct) {
+      stockChangePct.textContent = '--';
+      stockChangePct.className = 'text-sm text-gray-500';
+    }
   }
   // Open, Prev Close, Volume
-  stockOpen.textContent = last.open !== undefined ? last.open : '--';
-  stockPrevClose.textContent = prev && prev.close !== undefined ? prev.close : '--';
-  stockVolume.textContent = meta.volume ? formatNumber(meta.volume) : (last.volume ? formatNumber(last.volume) : '--');
+  if (stockOpen) stockOpen.textContent = last.open !== undefined ? last.open : '--';
+  if (stockPrevClose) stockPrevClose.textContent = prev && prev.close !== undefined ? prev.close : '--';
+  if (stockVolume) stockVolume.textContent = meta.volume ? formatNumber(meta.volume) : (last.volume ? formatNumber(last.volume) : '--');
   // Market Cap (fallback to --)
-  stockMarketCap.textContent = meta.marketCap ? formatNumber(meta.marketCap) : '--';
+  if (stockMarketCap) stockMarketCap.textContent = meta.marketCap ? formatNumber(meta.marketCap) : '--';
   // Day Range
-  stockDayRange.textContent = (last.low !== undefined && last.high !== undefined) ? `${last.low} - ${last.high}` : '--';
+  if (stockDayRange) stockDayRange.textContent = (last.low !== undefined && last.high !== undefined) ? `${last.low} - ${last.high}` : '--';
   // 52 Week Range (fallback to --)
-  stock52WeekRange.textContent = meta.range52w || '--';
+  if (stock52WeekRange) stock52WeekRange.textContent = meta.range52w || '--';
   // Mini chart
   if (miniChart) miniChart.destroy();
   const closes = ohlc.map(x => x.close);
   const labels = Array.from({length: closes.length}, (_, i) => i + 1);
-  miniChart = new Chart(document.getElementById('stock-mini-chart'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        data: closes,
-        borderColor: '#FFD700',
-        backgroundColor: 'rgba(255,215,0,0.08)',
-        fill: true,
-        tension: 0.4,
-        pointRadius: 0,
-        borderWidth: 2,
-      }]
-    },
-    options: {
-      plugins: { legend: { display: false } },
-      scales: { x: { display: false }, y: { display: false } },
-      elements: { line: { borderJoinStyle: 'round' } },
-      responsive: true,
-      maintainAspectRatio: false,
-    }
-  });
+  const miniChartCanvas = document.getElementById('stock-mini-chart');
+  if (miniChartCanvas) {
+    miniChart = new Chart(miniChartCanvas, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data: closes,
+          borderColor: '#FFD700',
+          backgroundColor: 'rgba(255,215,0,0.08)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+          borderWidth: 2,
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: { x: { display: false }, y: { display: false } },
+        elements: { line: { borderJoinStyle: 'round' } },
+        responsive: true,
+        maintainAspectRatio: false,
+      }
+    });
+  }
 }
 
 // --- Model/Data Cache ---
@@ -381,6 +408,7 @@ function renderPrediction() {
   const next = scaleUp(nextScaled);
   const nextDate = 'Next';
   lastPrediction = next;
+  console.log('Predicted value:', next);
   renderChart(dates, ohlc, [next], [nextDate]);
   predictionOutput.textContent = `Predicted next close: $${next.close.toFixed(2)}`;
   if (latestRmse !== null) {
@@ -389,7 +417,7 @@ function renderPrediction() {
 }
 
 // --- Patch: Hide card by default ---
-stockInfoCard.classList.add('hidden');
+if (stockInfoCard) stockInfoCard.classList.add('hidden');
 
 // --- Patch: Show card on search or popular stock click ---
 // In form submit handler, after fetching data and updating UI:
@@ -506,60 +534,6 @@ predictBtn.addEventListener('click', () => {
 historicalBtn.addEventListener('click', () => {
   if (!latestFetched) return;
   renderHistoricalOnly();
-});
-
-// --- Popular Stocks Bar Logic ---
-const popularSymbols = [
-  'AAPL', 'MSFT', 'TSLA', 'AMZN', 'GOOGL',
-  'META', 'NVDA', 'NFLX', 'JPM', 'BAC',
-  'WMT', 'DIS', 'V', 'MA', 'UNH',
-  'PFE', 'INTC', 'ORCL', 'CSCO'
-];
-async function updatePopularBadges() {
-  for (const symbol of popularSymbols) {
-    const badge = document.getElementById('badge-' + symbol);
-    try {
-      const { ohlc } = await fetchStockData(symbol);
-      if (ohlc.length < 2) {
-        badge.textContent = '--';
-        badge.className = 'badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700';
-        continue;
-      }
-      const prev = ohlc[ohlc.length - 2].close;
-      const last = ohlc[ohlc.length - 1].close;
-      const pct = ((last - prev) / prev) * 100;
-      const pctStr = (pct > 0 ? '+' : '') + pct.toFixed(2) + '%';
-      badge.textContent = pctStr;
-      if (pct > 0) {
-        badge.className = 'badge text-xs px-2 py-1 rounded bg-green-200 text-green-800';
-      } else if (pct < 0) {
-        badge.className = 'badge text-xs px-2 py-1 rounded bg-red-200 text-red-800';
-      } else {
-        badge.className = 'badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700';
-      }
-    } catch {
-      badge.textContent = '--';
-      badge.className = 'badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700';
-    }
-  }
-}
-updatePopularBadges();
-
-// Click handler for popular stocks
-popularStocksBar.addEventListener('click', async (e) => {
-  const btn = e.target.closest('.popular-stock');
-  if (!btn) return;
-  const symbol = btn.getAttribute('data-symbol');
-  if (!symbol) return;
-  symbolInput.value = symbol;
-  // Simulate form submit
-  form.dispatchEvent(new Event('submit'));
-  // After search, auto-predict
-  setTimeout(() => {
-    predictBtn.click();
-    // Show card (meta minimal)
-    if (latestFetched) showStockInfoCard(symbol, latestFetched.ohlc, { name: symbol, currency: 'USD' });
-  }, 500);
 });
 
 // Force uppercase in the stock symbol input as the user types
