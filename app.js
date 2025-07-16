@@ -10,8 +10,37 @@ const chartCanvas = document.getElementById('stock-chart');
 const predictionOutput = document.getElementById('prediction-output');
 const accuracyOutput = document.getElementById('accuracy-output');
 const errorMessage = document.getElementById('error-message');
+const openValue = document.getElementById('open-value');
+const highValue = document.getElementById('high-value');
+const lowValue = document.getElementById('low-value');
+const closeValue = document.getElementById('close-value');
+const predictBtn = document.getElementById('predict-btn');
+const historicalBtn = document.getElementById('historical-btn');
+const popularStocksBar = document.getElementById('popular-stocks-bar');
+// Remove percent elements
+// const openPct = document.getElementById('open-pct');
+// const highPct = document.getElementById('high-pct');
+// const lowPct = document.getElementById('low-pct');
+// const closePct = document.getElementById('close-pct');
 
 let chart;
+
+// --- Stock Info Card Elements ---
+const stockInfoCard = document.getElementById('stock-info-card');
+const stockLogo = document.getElementById('stock-logo');
+const stockCompany = document.getElementById('stock-company');
+const stockSymbolCard = document.getElementById('stock-symbol');
+const stockPrice = document.getElementById('stock-price');
+const stockCurrency = document.getElementById('stock-currency');
+const stockChange = document.getElementById('stock-change');
+const stockChangePct = document.getElementById('stock-change-pct');
+const stockOpen = document.getElementById('stock-open');
+const stockPrevClose = document.getElementById('stock-prevclose');
+const stockVolume = document.getElementById('stock-volume');
+const stockMarketCap = document.getElementById('stock-marketcap');
+const stockDayRange = document.getElementById('stock-dayrange');
+const stock52WeekRange = document.getElementById('stock-52weekrange');
+let miniChart;
 
 // --- Mock Data Fallback (OHLC) ---
 const mockData = {
@@ -71,7 +100,7 @@ function scaleUp(step) {
 
 // --- Fetch Historical OHLC Data from Twelve Data (DAILY) ---
 async function fetchStockData(symbol) {
-  const apiKey = '47d6ae14f24140819ca0084cd038f199'; // <-- User's real Twelve Data API key
+  const apiKey = '517d40f17afa4499a7ac512829fcde96'; // <-- Updated API key
   const url = `https://api.twelvedata.com/time_series?symbol=${symbol}&interval=1day&outputsize=60&apikey=${apiKey}`;
   try {
     const response = await fetch(url);
@@ -191,6 +220,183 @@ function clearError() {
   errorMessage.classList.add('hidden');
 }
 
+function setPctChange(el, pct) {
+  if (pct === null || isNaN(pct)) {
+    el.textContent = '';
+    el.className = 'text-xs font-normal';
+    return;
+  }
+  const pctStr = (pct > 0 ? '+' : '') + pct.toFixed(2) + '%';
+  el.textContent = pctStr;
+  if (pct > 0) {
+    el.className = 'text-xs font-normal text-green-600';
+  } else if (pct < 0) {
+    el.className = 'text-xs font-normal text-red-600';
+  } else {
+    el.className = 'text-xs font-normal text-gray-500';
+  }
+}
+
+function setOhlcColor(el, diff) {
+  if (diff > 0) {
+    el.className = 'text-lg font-bold text-green-600';
+  } else if (diff < 0) {
+    el.className = 'text-lg font-bold text-red-600';
+  } else {
+    el.className = 'text-lg font-bold text-gray-500';
+  }
+}
+
+function updateOhlcUI(ohlc) {
+  const last = ohlc[ohlc.length - 1];
+  const prev = ohlc.length > 1 ? ohlc[ohlc.length - 2] : null;
+  openValue.textContent = last.open !== undefined ? last.open : '--';
+  highValue.textContent = last.high !== undefined ? last.high : '--';
+  lowValue.textContent = last.low !== undefined ? last.low : '--';
+  closeValue.textContent = last.close !== undefined ? last.close : '--';
+  if (prev) {
+    setOhlcColor(openValue, last.open - prev.open);
+    setOhlcColor(highValue, last.high - prev.high);
+    setOhlcColor(lowValue, last.low - prev.low);
+    setOhlcColor(closeValue, last.close - prev.close);
+  } else {
+    openValue.className = 'text-lg font-bold text-gray-500';
+    highValue.className = 'text-lg font-bold text-gray-500';
+    lowValue.className = 'text-lg font-bold text-gray-500';
+    closeValue.className = 'text-lg font-bold text-gray-500';
+  }
+}
+
+// --- Helper: Fetch company logo from Clearbit ---
+function getLogoUrl(symbol) {
+  // Try Clearbit, fallback to generic icon
+  return `https://logo.clearbit.com/${symbol.toLowerCase()}.com`;
+}
+
+// --- Helper: Format large numbers ---
+function formatNumber(n) {
+  if (!n || isNaN(n)) return '--';
+  if (n >= 1e12) return (n / 1e12).toFixed(2) + 'T';
+  if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(2) + 'K';
+  return n.toLocaleString();
+}
+
+// --- Helper: Show and fill stock info card ---
+function showStockInfoCard(symbol, ohlc, meta = {}) {
+  // Show card
+  stockInfoCard.classList.remove('hidden');
+  // Logo
+  stockLogo.src = getLogoUrl(symbol);
+  // Company name (fallback to symbol)
+  stockCompany.textContent = meta.name || symbol;
+  // Symbol
+  stockSymbolCard.textContent = symbol;
+  // Price, change, open, prev close, etc.
+  const last = ohlc[ohlc.length - 1];
+  const prev = ohlc.length > 1 ? ohlc[ohlc.length - 2] : null;
+  stockPrice.textContent = last.close !== undefined ? last.close : '--';
+  stockCurrency.textContent = meta.currency || 'USD';
+  // Change and percent
+  if (prev) {
+    const change = last.close - prev.close;
+    const pct = (change / prev.close) * 100;
+    stockChange.textContent = (change > 0 ? '+' : '') + change.toFixed(2);
+    stockChange.className = 'text-lg font-semibold ' + (change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-gray-500');
+    stockChangePct.textContent = (pct > 0 ? '+' : '') + pct.toFixed(2) + '%';
+    stockChangePct.className = 'text-sm ' + (pct > 0 ? 'text-green-600' : pct < 0 ? 'text-red-600' : 'text-gray-500');
+  } else {
+    stockChange.textContent = '--';
+    stockChangePct.textContent = '--';
+    stockChange.className = 'text-lg font-semibold text-gray-500';
+    stockChangePct.className = 'text-sm text-gray-500';
+  }
+  // Open, Prev Close, Volume
+  stockOpen.textContent = last.open !== undefined ? last.open : '--';
+  stockPrevClose.textContent = prev && prev.close !== undefined ? prev.close : '--';
+  stockVolume.textContent = meta.volume ? formatNumber(meta.volume) : (last.volume ? formatNumber(last.volume) : '--');
+  // Market Cap (fallback to --)
+  stockMarketCap.textContent = meta.marketCap ? formatNumber(meta.marketCap) : '--';
+  // Day Range
+  stockDayRange.textContent = (last.low !== undefined && last.high !== undefined) ? `${last.low} - ${last.high}` : '--';
+  // 52 Week Range (fallback to --)
+  stock52WeekRange.textContent = meta.range52w || '--';
+  // Mini chart
+  if (miniChart) miniChart.destroy();
+  const closes = ohlc.map(x => x.close);
+  const labels = Array.from({length: closes.length}, (_, i) => i + 1);
+  miniChart = new Chart(document.getElementById('stock-mini-chart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: closes,
+        borderColor: '#FFD700',
+        backgroundColor: 'rgba(255,215,0,0.08)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: { x: { display: false }, y: { display: false } },
+      elements: { line: { borderJoinStyle: 'round' } },
+      responsive: true,
+      maintainAspectRatio: false,
+    }
+  });
+}
+
+// --- Model/Data Cache ---
+const modelCache = {};
+
+// --- State ---
+let latestFetched = null; // { dates, ohlc }
+let latestNet = null;
+let latestWindowSize = 5;
+let latestSymbol = null;
+let latestRmse = null;
+let lastPrediction = null;
+
+// --- Helper: Render only historical chart ---
+function renderHistoricalOnly() {
+  if (!latestFetched) return;
+  renderChart(latestFetched.dates, latestFetched.ohlc, [], []);
+  predictionOutput.textContent = '';
+  accuracyOutput.textContent = '';
+}
+
+// --- Helper: Render prediction chart ---
+function renderPrediction() {
+  if (!latestFetched || !latestNet) return;
+  const { dates, ohlc } = latestFetched;
+  const net = latestNet;
+  const windowSize = latestWindowSize;
+  const scaledOhlc = ohlc.map(scaleDown);
+  const lastWindow = scaledOhlc.slice(-windowSize);
+  const nextScaled = net.run(lastWindow);
+  const next = scaleUp(nextScaled);
+  const nextDate = 'Next';
+  lastPrediction = next;
+  renderChart(dates, ohlc, [next], [nextDate]);
+  predictionOutput.textContent = `Predicted next close: $${next.close.toFixed(2)}`;
+  if (latestRmse !== null) {
+    accuracyOutput.textContent = `Test RMSE (lower is better): ${latestRmse.toFixed(4)}`;
+  }
+}
+
+// --- Patch: Hide card by default ---
+stockInfoCard.classList.add('hidden');
+
+// --- Patch: Show card on search or popular stock click ---
+// In form submit handler, after fetching data and updating UI:
+// ... after updateOhlcUI(ohlc); ...
+// showStockInfoCard(symbol, ohlc, meta);
+// For now, meta will be minimal (symbol, currency, etc.)
+
 // --- Main Form Handler ---
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -205,6 +411,20 @@ form.addEventListener('submit', async (e) => {
     showError('Please enter a valid stock symbol.');
     return;
   }
+  latestSymbol = symbol;
+
+  // Check cache first
+  if (modelCache[symbol]) {
+    const { dates, ohlc, net, rmse } = modelCache[symbol];
+    updateOhlcUI(ohlc);
+    latestFetched = { dates, ohlc };
+    latestNet = net;
+    latestWindowSize = 5;
+    latestRmse = rmse;
+    renderHistoricalOnly();
+    setLoading(false);
+    return;
+  }
 
   // 1. Fetch OHLC data
   const { dates, ohlc } = await fetchStockData(symbol);
@@ -214,11 +434,15 @@ form.addEventListener('submit', async (e) => {
     return;
   }
 
+  updateOhlcUI(ohlc);
+  latestFetched = { dates, ohlc };
+
   // 2. Normalize
   const scaledOhlc = ohlc.map(scaleDown);
 
   // 3. Prepare sequences
   const windowSize = 5;
+  latestWindowSize = windowSize;
   const sequences = prepareSequences(scaledOhlc, windowSize);
   if (sequences.length < 2) {
     setLoading(false);
@@ -229,50 +453,113 @@ form.addEventListener('submit', async (e) => {
   // 4. Split train/test
   const { train, test } = splitTrainTest(sequences, 0.2);
 
-  // 5. Train LSTMTimeStep
-  let net;
-  try {
-    net = new brain.recurrent.LSTMTimeStep({
-      inputSize: 4,
-      hiddenLayers: [8, 8],
-      outputSize: 4
-    });
-    net.train(train, {
-      learningRate: 0.005,
-      errorThresh: 0.02,
-    });
-  } catch (err) {
+  // 5. Train LSTMTimeStep asynchronously
+  setTimeout(() => {
+    let net;
+    try {
+      net = new brain.recurrent.LSTMTimeStep({
+        inputSize: 4,
+        hiddenLayers: [6], // smaller network for speed
+        outputSize: 4
+      });
+      net.train(train, {
+        learningRate: 0.01, // slightly higher for speed
+        errorThresh: 0.05, // higher for faster convergence
+        iterations: 50, // limit iterations for speed
+      });
+    } catch (err) {
+      setLoading(false);
+      showError('Model training failed: ' + err.message);
+      return;
+    }
+    latestNet = net;
+
+    // 6. Test prediction (on test set)
+    const testPreds = test.map(seq => net.run(seq.slice(0, windowSize - 1).concat([seq[windowSize - 2]])));
+    const testTrue = test.map(seq => seq[windowSize - 1]);
+    const rmse = calcOHLC_RMSE(testTrue, testPreds);
+    latestRmse = rmse;
+
+    // Cache model/data
+    modelCache[symbol] = { dates, ohlc, net, rmse };
+    // Only show historical data
+    renderHistoricalOnly();
     setLoading(false);
-    showError('Model training failed: ' + err.message);
+  }, 10);
+});
+
+// Predict Values button handler
+predictBtn.addEventListener('click', () => {
+  if (!latestFetched || !latestNet) {
+    showError('Please search for a stock first.');
     return;
   }
-
-  // 6. Test prediction (on test set)
-  const testPreds = test.map(seq => net.run(seq.slice(0, windowSize - 1).concat([seq[windowSize - 2]])));
-  const testTrue = test.map(seq => seq[windowSize - 1]);
-  const rmse = calcOHLC_RMSE(testTrue, testPreds);
-
-  // 7. Predict next period (using last window)
-  const lastWindow = scaledOhlc.slice(-windowSize);
-  const nextScaled = net.run(lastWindow);
-  const next = scaleUp(nextScaled);
-  const nextDate = 'Next';
-
-  // 8. Render chart (historical + prediction)
-  renderChart(
-    dates,
-    ohlc,
-    [next],
-    [nextDate]
-  );
-
-  // 9. Show prediction and accuracy
-  predictionOutput.textContent = `Predicted next close: $${next.close.toFixed(2)}`;
-  if (rmse !== null) {
-    accuracyOutput.textContent = `Test RMSE (lower is better): ${rmse.toFixed(4)}`;
-  }
-
+  setLoading(true);
+  clearError();
+  predictionOutput.textContent = '';
+  accuracyOutput.textContent = '';
+  renderPrediction();
   setLoading(false);
+});
+
+// Historical Data button handler
+historicalBtn.addEventListener('click', () => {
+  if (!latestFetched) return;
+  renderHistoricalOnly();
+});
+
+// --- Popular Stocks Bar Logic ---
+const popularSymbols = [
+  'AAPL', 'MSFT', 'TSLA', 'AMZN', 'GOOGL',
+  'META', 'NVDA', 'NFLX', 'JPM', 'BAC',
+  'WMT', 'DIS', 'V', 'MA', 'UNH',
+  'PFE', 'INTC', 'ORCL', 'CSCO'
+];
+async function updatePopularBadges() {
+  for (const symbol of popularSymbols) {
+    const badge = document.getElementById('badge-' + symbol);
+    try {
+      const { ohlc } = await fetchStockData(symbol);
+      if (ohlc.length < 2) {
+        badge.textContent = '--';
+        badge.className = 'badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700';
+        continue;
+      }
+      const prev = ohlc[ohlc.length - 2].close;
+      const last = ohlc[ohlc.length - 1].close;
+      const pct = ((last - prev) / prev) * 100;
+      const pctStr = (pct > 0 ? '+' : '') + pct.toFixed(2) + '%';
+      badge.textContent = pctStr;
+      if (pct > 0) {
+        badge.className = 'badge text-xs px-2 py-1 rounded bg-green-200 text-green-800';
+      } else if (pct < 0) {
+        badge.className = 'badge text-xs px-2 py-1 rounded bg-red-200 text-red-800';
+      } else {
+        badge.className = 'badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700';
+      }
+    } catch {
+      badge.textContent = '--';
+      badge.className = 'badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700';
+    }
+  }
+}
+updatePopularBadges();
+
+// Click handler for popular stocks
+popularStocksBar.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.popular-stock');
+  if (!btn) return;
+  const symbol = btn.getAttribute('data-symbol');
+  if (!symbol) return;
+  symbolInput.value = symbol;
+  // Simulate form submit
+  form.dispatchEvent(new Event('submit'));
+  // After search, auto-predict
+  setTimeout(() => {
+    predictBtn.click();
+    // Show card (meta minimal)
+    if (latestFetched) showStockInfoCard(symbol, latestFetched.ohlc, { name: symbol, currency: 'USD' });
+  }, 500);
 });
 
 // Force uppercase in the stock symbol input as the user types

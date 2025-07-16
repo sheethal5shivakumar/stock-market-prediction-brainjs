@@ -3,43 +3,305 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Stock Market Prediction (Brain.js)</title>
+  <title>TwinAlpha - Stock Market Prediction</title>
+  <!-- Google Fonts: Montserrat -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
   <!-- TailwindCSS CDN -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Brain.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/brain.js@2.0.0-beta.2/dist/brain-browser.min.js"></script>
+  <style>
+    body { font-family: 'Montserrat', sans-serif; }
+    .gold { color: #FFD700; }
+    .bg-gold { background-color: #FFD700; }
+    .bg-black { background-color: #111111; }
+    .text-black { color: #111111; }
+    .border-gold { border-color: #FFD700; }
+    .shadow-gold { box-shadow: 0 2px 8px 0 rgba(255, 215, 0, 0.12); }
+    /* Dark theme styles */
+    body.dark { background: #111111; color: #FFD700; }
+    body.dark .bg-white, body.dark .bg-white\/95, body.dark .bg-white\/90, body.dark .bg-white\/80, body.dark .bg-white\/70, body.dark .bg-white\/60, body.dark .bg-white\/50, body.dark .bg-white\/40, body.dark .bg-white\/30, body.dark .bg-white\/20, body.dark .bg-white\/10, body.dark .bg-white\/5, body.dark .bg-white\/0 {
+      background: #181818 !important;
+      color: #FFD700 !important;
+    }
+    body.dark .text-black { color: #FFD700 !important; }
+    body.dark .gold { color: #FFD700 !important; }
+    body.dark .border-gold { border-color: #FFD700 !important; }
+    body.dark .shadow-gold { box-shadow: 0 2px 8px 0 rgba(255, 215, 0, 0.18); }
+    body.dark .bg-gold { background: #FFD700 !important; color: #111111 !important; }
+    body.dark .bg-black { background: #111111 !important; color: #FFD700 !important; }
+    body.dark input, body.dark textarea {
+      background: #222 !important; color: #FFD700 !important; border-color: #FFD700 !important;
+    }
+    body.dark .rounded-xl, body.dark .rounded-2xl, body.dark .rounded-lg {
+      background: #181818 !important;
+      color: #FFD700 !important;
+    }
+    body.dark .text-gold { color: #FFD700 !important; }
+    body.dark .text-white { color: #FFD700 !important; }
+    body.dark .text-gray-500, body.dark .text-gray-600, body.dark .text-gray-700, body.dark .text-gray-800, body.dark .text-gray-900 {
+      color: #FFD700 !important;
+    }
+    body.dark .bg-gray-100, body.dark .bg-gray-200, body.dark .bg-gray-300, body.dark .bg-gray-400, body.dark .bg-gray-500, body.dark .bg-gray-600, body.dark .bg-gray-700, body.dark .bg-gray-800, body.dark .bg-gray-900 {
+      background: #222 !important;
+    }
+    body.dark .bg-gold { background: #FFD700 !important; color: #111111 !important; }
+    body.dark .bg-black { background: #111111 !important; color: #FFD700 !important; }
+    body.dark .border-gold { border-color: #FFD700 !important; }
+    body.dark .shadow-gold { box-shadow: 0 2px 8px 0 rgba(255, 215, 0, 0.18); }
+    body.dark .bg-white { background: #181818 !important; color: #FFD700 !important; }
+    body.dark .bg-white\/95, body.dark .bg-white\/90, body.dark .bg-white\/80, body.dark .bg-white\/70, body.dark .bg-white\/60, body.dark .bg-white\/50, body.dark .bg-white\/40, body.dark .bg-white\/30, body.dark .bg-white\/20, body.dark .bg-white\/10, body.dark .bg-white\/5, body.dark .bg-white\/0 {
+      background: #181818 !important; color: #FFD700 !important;
+    }
+    body.dark .bg-gold:hover, body.dark .hover\:bg-gold:hover { background: #FFD700 !important; color: #111111 !important; }
+    body.dark .bg-black:hover, body.dark .hover\:bg-black:hover { background: #111111 !important; color: #FFD700 !important; }
+    body.dark .bg-gold:active, body.dark .active\:bg-gold:active { background: #FFD700 !important; color: #111111 !important; }
+    body.dark .bg-black:active, body.dark .active\:bg-black:active { background: #111111 !important; color: #FFD700 !important; }
+    body.dark .border-2 { border-width: 2px !important; }
+    body.dark .border { border-width: 1px !important; }
+    body.dark .shadow-xl, body.dark .shadow-2xl, body.dark .shadow-inner, body.dark .shadow-gold { box-shadow: 0 2px 8px 0 rgba(255, 215, 0, 0.18) !important; }
+    body.dark .loader { border-top-color: #FFD700; }
+  </style>
 </head>
-<body class="bg-gradient-to-br from-blue-100 to-blue-300 min-h-screen flex items-center justify-center">
-  <div class="w-full max-w-xl bg-white/80 rounded-2xl shadow-xl p-8 flex flex-col gap-6">
-    <h1 class="text-3xl font-bold text-center mb-2">Stock Market Prediction</h1>
-    <!-- Input form -->
-    <form id="stock-form" class="flex flex-col sm:flex-row gap-4 items-center justify-center">
-      <input id="stock-symbol" type="text" placeholder="Enter Stock Symbol (e.g. AAPL)" class="flex-1 border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" required />
-      <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">Predict</button>
-    </form>
-    <!-- Loader -->
-    <div id="loader" class="hidden flex justify-center"><div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-8 w-8"></div></div>
-    <!-- Chart area -->
-    <canvas id="stock-chart" class="w-full h-64"></canvas>
-    <!-- Prediction output -->
-    <div id="prediction-output" class="text-center text-lg font-semibold"></div>
-    <!-- Accuracy/Error display -->
-    <div id="accuracy-output" class="text-center text-sm text-gray-600"></div>
-    <div id="error-message" class="hidden text-center text-red-600"></div>
+<body class="bg-white min-h-screen">
+  <!-- Navbar/Header -->
+  <header class="w-full bg-white border-b border-gold shadow-gold">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between py-4 px-6 gap-2">
+      <div class="flex items-center gap-4">
+        <!-- Logo -->
+        <div class="w-12 h-12 rounded-full flex items-center justify-center bg-gold text-black font-extrabold text-2xl shadow-gold select-none">TA</div>
+        <div class="flex flex-col">
+          <span class="text-3xl font-extrabold tracking-tight text-black leading-none">TwinAlpha</span>
+          <span class="text-xs font-semibold gold tracking-wide mt-1">Powered by Nidhi & Sheethal — Predicting the Pulse of the Market</span>
+        </div>
+      </div>
+      <nav class="flex-1 flex items-center justify-end gap-8 text-lg font-semibold">
+        <a href="#" class="text-black hover:text-gold transition">Home</a>
+        <a href="#" class="text-black hover:text-gold transition" id="about-link">About</a>
+        <!-- Theme Toggle Button -->
+        <button id="theme-toggle" class="ml-4 p-2 rounded-full bg-gold text-black hover:bg-black hover:text-gold transition shadow-gold" title="Toggle dark/light mode">
+          <span id="theme-icon" class="text-xl">&#9788;</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+  <!-- About Modal -->
+  <div id="about-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 border-2 border-gold relative">
+      <button id="about-close" class="absolute top-4 right-4 text-black hover:text-gold text-2xl font-bold">&times;</button>
+      <h2 class="text-2xl font-extrabold gold mb-2">About TwinAlpha</h2>
+      <p class="text-black text-base mb-4">At <span class="gold font-bold">TwinAlpha</span>, we are passionate about combining data science, finance, and artificial intelligence to simplify stock market forecasting. Built by <span class="font-bold">Nidhi</span> and <span class="font-bold">Sheethal</span>, this platform is designed to help everyday investors and curious learners gain intelligent insights into stock trends using neural network models.</p>
+      <p class="text-black text-base mb-4">Our AI engine, powered by Brain.js, analyzes historical stock data to make future predictions — all wrapped in a beautiful, user-friendly experience. Whether you're an investor, a student, or simply curious about financial markets, TwinAlpha makes complex predictions accessible, accurate, and engaging.</p>
+      <p class="text-black text-base">With real-time stock data, intuitive visualizations, and intelligent forecasting — <span class="gold font-bold">TwinAlpha</span> is your gateway to understanding the market’s next move.</p>
+    </div>
   </div>
+
+  <!-- Popular Stocks Bar (Scrolling) -->
+  <div id="popular-stocks-bar-wrapper" class="w-full max-w-2xl mx-auto overflow-hidden relative py-4">
+    <div id="popular-stocks-bar" class="flex items-center gap-4 ticker-animation will-change-transform">
+      <button class="popular-stock flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow border border-gray-200 hover:bg-blue-50 transition" data-symbol="AAPL">
+        <span class="font-bold">AAPL</span>
+        <span class="badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700" id="badge-AAPL">--</span>
+      </button>
+      <button class="popular-stock flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow border border-gray-200 hover:bg-blue-50 transition" data-symbol="MSFT">
+        <span class="font-bold">MSFT</span>
+        <span class="badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700" id="badge-MSFT">--</span>
+      </button>
+      <button class="popular-stock flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow border border-gray-200 hover:bg-blue-50 transition" data-symbol="TSLA">
+        <span class="font-bold">TSLA</span>
+        <span class="badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700" id="badge-TSLA">--</span>
+      </button>
+      <button class="popular-stock flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow border border-gray-200 hover:bg-blue-50 transition" data-symbol="AMZN">
+        <span class="font-bold">AMZN</span>
+        <span class="badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700" id="badge-AMZN">--</span>
+      </button>
+      <button class="popular-stock flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow border border-gray-200 hover:bg-blue-50 transition" data-symbol="GOOGL">
+        <span class="font-bold">GOOGL</span>
+        <span class="badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700" id="badge-GOOGL">--</span>
+      </button>
+      <button class="popular-stock flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow border border-gray-200 hover:bg-blue-50 transition" data-symbol="META">
+        <span class="font-bold">META</span>
+        <span class="badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700" id="badge-META">--</span>
+      </button>
+      <button class="popular-stock flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow border border-gray-200 hover:bg-blue-50 transition" data-symbol="NVDA">
+        <span class="font-bold">NVDA</span>
+        <span class="badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700" id="badge-NVDA">--</span>
+      </button>
+      <button class="popular-stock flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow border border-gray-200 hover:bg-blue-50 transition" data-symbol="NFLX">
+        <span class="font-bold">NFLX</span>
+        <span class="badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700" id="badge-NFLX">--</span>
+      </button>
+      <button class="popular-stock flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow border border-gray-200 hover:bg-blue-50 transition" data-symbol="JPM">
+        <span class="font-bold">JPM</span>
+        <span class="badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700" id="badge-JPM">--</span>
+      </button>
+      <button class="popular-stock flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow border border-gray-200 hover:bg-blue-50 transition" data-symbol="BAC">
+        <span class="font-bold">BAC</span>
+        <span class="badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700" id="badge-BAC">--</span>
+      </button>
+      <button class="popular-stock flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow border border-gray-200 hover:bg-blue-50 transition" data-symbol="WMT">
+        <span class="font-bold">WMT</span>
+        <span class="badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700" id="badge-WMT">--</span>
+      </button>
+      <button class="popular-stock flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow border border-gray-200 hover:bg-blue-50 transition" data-symbol="DIS">
+        <span class="font-bold">DIS</span>
+        <span class="badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700" id="badge-DIS">--</span>
+      </button>
+      <button class="popular-stock flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow border border-gray-200 hover:bg-blue-50 transition" data-symbol="V">
+        <span class="font-bold">V</span>
+        <span class="badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700" id="badge-V">--</span>
+      </button>
+      <button class="popular-stock flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow border border-gray-200 hover:bg-blue-50 transition" data-symbol="MA">
+        <span class="font-bold">MA</span>
+        <span class="badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700" id="badge-MA">--</span>
+      </button>
+      <button class="popular-stock flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow border border-gray-200 hover:bg-blue-50 transition" data-symbol="UNH">
+        <span class="font-bold">UNH</span>
+        <span class="badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700" id="badge-UNH">--</span>
+      </button>
+      <button class="popular-stock flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow border border-gray-200 hover:bg-blue-50 transition" data-symbol="PFE">
+        <span class="font-bold">PFE</span>
+        <span class="badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700" id="badge-PFE">--</span>
+      </button>
+      <button class="popular-stock flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow border border-gray-200 hover:bg-blue-50 transition" data-symbol="INTC">
+        <span class="font-bold">INTC</span>
+        <span class="badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700" id="badge-INTC">--</span>
+      </button>
+      <button class="popular-stock flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow border border-gray-200 hover:bg-blue-50 transition" data-symbol="ORCL">
+        <span class="font-bold">ORCL</span>
+        <span class="badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700" id="badge-ORCL">--</span>
+      </button>
+      <button class="popular-stock flex items-center gap-2 px-4 py-2 rounded-lg bg-white shadow border border-gray-200 hover:bg-blue-50 transition" data-symbol="CSCO">
+        <span class="font-bold">CSCO</span>
+        <span class="badge text-xs px-2 py-1 rounded bg-gray-200 text-gray-700" id="badge-CSCO">--</span>
+      </button>
+    </div>
+  </div>
+  <!-- Main Content -->
+  <main class="flex flex-col items-center justify-center py-10 px-2">
+    <div class="w-full max-w-2xl bg-white/95 rounded-2xl shadow-2xl p-8 flex flex-col gap-8 border-2 border-gold">
+      <!-- Stock Input and Actions -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <form id="stock-form" class="flex flex-1 gap-3 items-center">
+          <input id="stock-symbol" type="text" placeholder="Enter Stock Symbol (e.g. AAPL)" class="flex-1 border-2 border-gold rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gold text-black font-semibold bg-white" required />
+          <button type="submit" class="bg-gold text-black px-6 py-2 rounded font-bold shadow-gold hover:bg-black hover:text-gold transition">Search</button>
+        </form>
+        <div class="flex gap-2 mt-2 sm:mt-0">
+          <button id="historical-btn" class="bg-white border-2 border-gold text-black px-4 py-2 rounded font-bold hover:bg-gold hover:text-black transition shadow-gold">Historical Data</button>
+          <button id="predict-btn" class="bg-gold text-black px-4 py-2 rounded font-bold hover:bg-black hover:text-gold transition shadow-gold">Predict Values</button>
+        </div>
+      </div>
+      <!-- OHLC Dashboard (refined) -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 mb-2" id="ohlc-dashboard">
+        <div class="bg-white border-2 border-gold rounded-lg p-4 flex flex-col items-center shadow-gold">
+          <span class="text-xs text-black font-semibold">Open</span>
+          <span id="open-value" class="text-lg font-bold">--</span>
+        </div>
+        <div class="bg-white border-2 border-gold rounded-lg p-4 flex flex-col items-center shadow-gold">
+          <span class="text-xs text-black font-semibold">High</span>
+          <span id="high-value" class="text-lg font-bold">--</span>
+        </div>
+        <div class="bg-white border-2 border-gold rounded-lg p-4 flex flex-col items-center shadow-gold">
+          <span class="text-xs text-black font-semibold">Low</span>
+          <span id="low-value" class="text-lg font-bold">--</span>
+        </div>
+        <div class="bg-white border-2 border-gold rounded-lg p-4 flex flex-col items-center shadow-gold">
+          <span class="text-xs text-black font-semibold">Close</span>
+          <span id="close-value" class="text-lg font-bold">--</span>
+        </div>
+      </div>
+      <!-- Stock Info Card (refined) -->
+      <div id="stock-info-card" class="hidden w-full max-w-md mx-auto bg-white rounded-2xl shadow-xl p-6 flex flex-col gap-4 border-2 border-gold">
+        <div class="flex items-center gap-4 mb-2">
+          <img id="stock-logo" src="" alt="Logo" class="w-12 h-12 rounded-full bg-gray-100 object-contain border border-gold">
+          <div>
+            <div id="stock-company" class="text-xl font-extrabold text-black">Company Name</div>
+            <div id="stock-symbol" class="text-sm gold font-bold">SYMBOL</div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between mb-2">
+          <div>
+            <span id="stock-price" class="text-2xl font-bold gold">--</span>
+            <span id="stock-currency" class="text-sm text-black">USD</span>
+          </div>
+          <div class="flex flex-col items-end">
+            <span id="stock-change" class="text-lg font-semibold">--</span>
+            <span id="stock-change-pct" class="text-sm">--</span>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm mb-2">
+          <div>Open<br><span id="stock-open" class="font-semibold text-black">--</span></div>
+          <div>Prev Close<br><span id="stock-prevclose" class="font-semibold text-black">--</span></div>
+          <div>Volume<br><span id="stock-volume" class="font-semibold text-black">--</span></div>
+          <div>Market Cap<br><span id="stock-marketcap" class="font-semibold text-black">--</span></div>
+          <div>Day Range<br><span id="stock-dayrange" class="font-semibold text-black">--</span></div>
+          <div>52 Week Range<br><span id="stock-52weekrange" class="font-semibold text-black">--</span></div>
+        </div>
+        <div class="w-full h-20">
+          <canvas id="stock-mini-chart" class="w-full h-20"></canvas>
+        </div>
+      </div>
+      <!-- Chart Card -->
+      <div class="bg-white rounded-xl shadow-inner p-6 border-2 border-gold">
+        <canvas id="stock-chart" class="w-full h-64"></canvas>
+      </div>
+      <!-- Prediction Output -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div id="prediction-output" class="text-center text-xl font-bold text-blue-800 flex-1"></div>
+        <div id="accuracy-output" class="text-center text-sm text-gray-600 flex-1"></div>
+      </div>
+      <div id="error-message" class="hidden text-center text-red-600"></div>
+    </div>
+  </main>
   <style>
     .loader {
-      border-top-color: #3498db;
+      border-top-color: #FFD700;
       animation: spin 1s linear infinite;
     }
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+    /* Ticker animation for popular stocks bar */
+    .ticker-animation {
+      display: flex;
+      animation: ticker-scroll 18s linear infinite;
+    }
+    @keyframes ticker-scroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    /* Duplicate the bar for seamless looping (JS can do this if needed) */
+    /* About Modal */
+    #about-modal { backdrop-filter: blur(2px); }
+    #about-modal .gold { color: #FFD700; }
   </style>
   <!-- Main app logic -->
   <script src="app.js"></script>
+  <script>
+// About modal logic
+const aboutLink = document.getElementById('about-link');
+const aboutModal = document.getElementById('about-modal');
+const aboutClose = document.getElementById('about-close');
+aboutLink.addEventListener('click', (e) => { e.preventDefault(); aboutModal.classList.remove('hidden'); });
+aboutClose.addEventListener('click', () => aboutModal.classList.add('hidden'));
+aboutModal.addEventListener('click', (e) => { if (e.target === aboutModal) aboutModal.classList.add('hidden'); });
+
+// Theme toggle logic
+const themeToggle = document.getElementById('theme-toggle');
+const themeIcon = document.getElementById('theme-icon');
+function setTheme(dark) {
+  document.body.classList.toggle('dark', dark);
+  themeIcon.innerHTML = dark ? '&#9790;' : '&#9788;'; // moon : sun
+  localStorage.setItem('twinalpha-theme', dark ? 'dark' : 'light');
+}
+// Initial theme
+setTheme(localStorage.getItem('twinalpha-theme') === 'dark');
+themeToggle.addEventListener('click', () => {
+  setTheme(!document.body.classList.contains('dark'));
+});
+</script>
 </body>
 </html> 
